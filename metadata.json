@@ -1,0 +1,18 @@
+{
+    "KPackageStructure": "Plasma/Applet",
+    "KPlugin": {
+        "Authors": [
+            {
+                "Name": "Centurix (Cinnamon), adapté par SmokedPanda", 
+                "Email": "mahicala@gmail.com"
+            }
+        ],
+        "Category": "Utilities",
+        "Description": "Accès rapide aux cheatsheets avec icônes personnalisées",
+        "Icon": "accessories-text-editor",
+        "Id": "org.kde.plasma.cheaty",
+        "Name": "Cheaty KDE",
+        "Version": "1.0"
+    },
+    "X-Plasma-API-Minimum-Version": "6.0"
+}
