@@ -1,4 +1,4 @@
-// Cheaty KDE - Version corrigée sans chevauchement
+// Cheaty KDE - Version corrigée avec icône et contenu fonctionnels
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -25,12 +25,12 @@ PlasmoidItem {
     toolTipMainText: "Cheaty KDE"
     toolTipSubText: loadedSheets.length + " cheatsheets disponibles"
     
-    // Icône personnalisée - utilise le chemin relatif correct
-    property string customIcon: Qt.resolvedUrl("../cheatykde.svg")
+    // Chemin de l'icône corrigé
+    property string customIconPath: plasmoid.file("", "cheatykde.svg")
     
     Component.onCompleted: {
         console.log("🚀 Cheaty KDE démarré");
-        console.log("📍 Chemin de l'icône:", Qt.resolvedUrl("../cheatykde.svg"));
+        console.log("📍 Chemin de l'icône:", customIconPath);
         loadCheatsheets();
     }
     
@@ -46,7 +46,7 @@ PlasmoidItem {
         
         Kirigami.Icon {
             anchors.fill: parent
-            source: root.customIcon.length > 0 ? root.customIcon : "accessories-text-editor"
+            source: root.customIconPath || "accessories-text-editor"
             active: parent.containsMouse
             scale: parent.containsMouse ? 1.1 : 1.0
             Behavior on scale { NumberAnimation { duration: 150 } }
@@ -78,7 +78,7 @@ PlasmoidItem {
                 Layout.fillWidth: true
                 
                 Kirigami.Icon {
-                    source: root.customIcon.length > 0 ? root.customIcon : "accessories-text-editor"
+                    source: root.customIconPath || "accessories-text-editor"
                     Layout.preferredWidth: 32
                     Layout.preferredHeight: 32
                 }
@@ -140,19 +140,10 @@ PlasmoidItem {
                                         anchors.margins: 5
                                         spacing: 10
                                         
-                                        Image {
+                                        Kirigami.Icon {
                                             Layout.preferredWidth: 32
                                             Layout.preferredHeight: 32
-                                            source: modelData.iconPath ? "file://" + modelData.iconPath : ""
-                                            sourceSize: Qt.size(32, 32)
-                                            fillMode: Image.PreserveAspectFit
-                                            
-                                            // Fallback icon si pas d'image
-                                            Kirigami.Icon {
-                                                anchors.fill: parent
-                                                source: "text-x-generic"
-                                                visible: parent.status !== Image.Ready
-                                            }
+                                            source: modelData.iconPath ? "file://" + modelData.iconPath : "text-x-generic"
                                         }
                                         
                                         PlasmaComponents.Label {
@@ -203,22 +194,20 @@ PlasmoidItem {
                                 model: root.contentModel
                                 spacing: 0
                                 
-                                delegate: Item {
+                                delegate: Column {
                                     width: contentListView.width
-                                    height: model.isSection ? 35 : (root.isSectionExpanded(model.sectionName) ? itemContent.height : 0)
-                                    clip: true
                                     
-                                    // Section header
+                                    // Section header - toujours visible
                                     Rectangle {
-                                        anchors.fill: parent
-                                        color: model.isSection ? Kirigami.Theme.highlightColor : "transparent"
-                                        opacity: model.isSection ? 0.3 : 0
+                                        width: parent.width
+                                        height: model.isSection ? 35 : 0
                                         visible: model.isSection
+                                        color: Kirigami.Theme.highlightColor
+                                        opacity: 0.3
                                         
                                         MouseArea {
                                             anchors.fill: parent
                                             cursorShape: Qt.PointingHandCursor
-                                            enabled: model.isSection
                                             onClicked: {
                                                 root.toggleSection(model.sectionName);
                                             }
@@ -228,28 +217,29 @@ PlasmoidItem {
                                             anchors.fill: parent
                                             anchors.leftMargin: 10
                                             anchors.rightMargin: 10
-                                            visible: model.isSection
                                             
                                             PlasmaComponents.Label {
-                                                text: model.isSection ? (root.isSectionExpanded(model.sectionName) ? "▼ " : "▶ ") + model.sectionName : ""
+                                                text: (root.isSectionExpanded(model.sectionName) ? "▼ " : "▶ ") + model.sectionName
                                                 font.bold: true
                                                 Layout.fillWidth: true
                                             }
                                             
                                             PlasmaComponents.Label {
-                                                text: model.isSection ? "(" + model.itemCount + " items)" : ""
+                                                text: "(" + model.itemCount + " items)"
                                                 opacity: 0.7
                                                 font.pixelSize: 12
                                             }
                                         }
                                     }
                                     
-                                    // Item content
-                                    Item {
-                                        id: itemContent
-                                        anchors.fill: parent
-                                        height: model.isSection ? 0 : (itemColumn.implicitHeight + 20)
+                                    // Item content - visible seulement si section expandée
+                                    Rectangle {
+                                        width: parent.width
+                                        height: !model.isSection && root.isSectionExpanded(model.sectionName) ? 
+                                               (itemColumn.implicitHeight + 20) : 0
                                         visible: !model.isSection && root.isSectionExpanded(model.sectionName)
+                                        color: "transparent"
+                                        clip: true
                                         
                                         ColumnLayout {
                                             id: itemColumn
@@ -264,7 +254,6 @@ PlasmoidItem {
                                                 text: model.itemName || ""
                                                 font.bold: true
                                                 Layout.fillWidth: true
-                                                visible: !model.isSection
                                             }
                                             
                                             PlasmaComponents.Label {
@@ -272,7 +261,7 @@ PlasmoidItem {
                                                 opacity: 0.7
                                                 wrapMode: Text.WordWrap
                                                 Layout.fillWidth: true
-                                                visible: !model.isSection && text !== ""
+                                                visible: text !== ""
                                             }
                                             
                                             Rectangle {
@@ -283,7 +272,7 @@ PlasmoidItem {
                                                 border.width: 1
                                                 opacity: 0.8
                                                 radius: 3
-                                                visible: !model.isSection && model.code !== ""
+                                                visible: model.code !== ""
                                                 
                                                 PlasmaComponents.Label {
                                                     id: codeText
@@ -299,7 +288,7 @@ PlasmoidItem {
                                             PlasmaComponents.Button {
                                                 text: "📋 Copier"
                                                 Layout.alignment: Qt.AlignRight
-                                                visible: !model.isSection && model.code !== ""
+                                                visible: model.code !== ""
                                                 
                                                 property string codeText: model.code || ""
                                                 
@@ -406,11 +395,21 @@ PlasmoidItem {
         }
         
         console.log("✅ Total entrées ajoutées:", root.contentModel.count);
+        
+        // Forcer le rafraîchissement de la vue
+        contentListView.forceLayout();
     }
     
     function toggleSection(sectionName) {
+        console.log("🔄 Toggle section:", sectionName, "was:", root.expandedSections[sectionName]);
         root.expandedSections[sectionName] = !root.expandedSections[sectionName];
+        console.log("🔄 Toggle section:", sectionName, "now:", root.expandedSections[sectionName]);
+        
+        // Forcer le rafraîchissement en émettant un signal
         root.expandedSectionsChanged();
+        
+        // Alternative : forcer le rafraîchissement du modèle
+        contentListView.forceLayout();
     }
     
     function isSectionExpanded(sectionName) {
@@ -511,4 +510,7 @@ PlasmoidItem {
         
         return false;
     }
+    
+    // Signal pour notifier les changements d'expandedSections
+    signal expandedSectionsChanged()
 }
