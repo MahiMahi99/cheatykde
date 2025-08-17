@@ -402,13 +402,15 @@ PlasmoidItem {
     
     function toggleSection(sectionName) {
         console.log("🔄 Toggle section:", sectionName, "was:", root.expandedSections[sectionName]);
-        root.expandedSections[sectionName] = !root.expandedSections[sectionName];
+        
+        // Créer une nouvelle copie de l'objet pour déclencher le changement
+        let newExpandedSections = Object.assign({}, root.expandedSections);
+        newExpandedSections[sectionName] = !newExpandedSections[sectionName];
+        root.expandedSections = newExpandedSections;
+        
         console.log("🔄 Toggle section:", sectionName, "now:", root.expandedSections[sectionName]);
         
-        // Forcer le rafraîchissement en émettant un signal
-        root.expandedSectionsChanged();
-        
-        // Alternative : forcer le rafraîchissement du modèle
+        // Forcer le rafraîchissement du modèle
         contentListView.forceLayout();
     }
     
@@ -510,7 +512,4 @@ PlasmoidItem {
         
         return false;
     }
-    
-    // Signal pour notifier les changements d'expandedSections
-    signal expandedSectionsChanged()
 }
