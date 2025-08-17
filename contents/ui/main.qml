@@ -1,4 +1,4 @@
-// Cheaty KDE - Version ultra-simple qui marche
+// Cheaty KDE - Version corrigée sans chevauchement
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -14,13 +14,23 @@ PlasmoidItem {
     property var loadedSheets: []
     property var currentSheet: null
     property string currentSection: ""
+    property string currentSheetName: "Sélectionnez un cheatsheet"
+    property int currentSheetIndex: -1
+    
+    // Modèle pour le contenu avec sections repliables
+    property ListModel contentModel: ListModel {}
+    property var expandedSections: ({})
     
     preferredRepresentation: compactRepresentation
     toolTipMainText: "Cheaty KDE"
     toolTipSubText: loadedSheets.length + " cheatsheets disponibles"
     
+    // Icône personnalisée - utilise le chemin relatif correct
+    property string customIcon: Qt.resolvedUrl("../cheatykde.svg")
+    
     Component.onCompleted: {
-        console.log("🚀 Cheaty KDE ultra-simple");
+        console.log("🚀 Cheaty KDE démarré");
+        console.log("📍 Chemin de l'icône:", Qt.resolvedUrl("../cheatykde.svg"));
         loadCheatsheets();
     }
     
@@ -28,284 +38,311 @@ PlasmoidItem {
     compactRepresentation: MouseArea {
         Layout.minimumWidth: Kirigami.Units.iconSizes.small
         Layout.minimumHeight: Kirigami.Units.iconSizes.small
+        Layout.preferredWidth: Kirigami.Units.iconSizes.smallMedium
+        Layout.preferredHeight: Kirigami.Units.iconSizes.smallMedium
         
         hoverEnabled: true
+        acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         
         Kirigami.Icon {
             anchors.fill: parent
-            source: "accessories-text-editor"
+            source: root.customIcon.length > 0 ? root.customIcon : "accessories-text-editor"
             active: parent.containsMouse
             scale: parent.containsMouse ? 1.1 : 1.0
             Behavior on scale { NumberAnimation { duration: 150 } }
         }
         
-        onClicked: {
-            if (loadedSheets.length > 0) {
-                console.log("📋 Ouverture menu");
-                mainMenu.popup();
-            } else {
-                root.expanded = true;
-            }
-        }
-        
-        // ============== MENU PRINCIPAL ==============
-        Menu {
-            id: mainMenu
-            
-            // Propriétés de taille pour Plasma 6
-            width: 250
-            
-            MenuItem {
-                text: "📋 Cheatsheets (" + loadedSheets.length + ")"
-                enabled: false
-                height: 30  // Hauteur fixe
-            }
-            
-            MenuSeparator {}
-            
-            // Bootstrap
-            MenuItem {
-                text: "🅱️ Bootstrap"
-                height: 35
-                visible: hasSheet("Bootstrap")
-                onTriggered: showSections("Bootstrap")
-            }
-            
-            MenuItem {
-                text: "🎨 CSS"
-                height: 35
-                visible: hasSheet("CSS")
-                onTriggered: showSections("CSS")
-            }
-            
-            MenuItem {
-                text: "🐳 Docker"
-                height: 35
-                visible: hasSheet("Docker")
-                onTriggered: showSections("Docker")
-            }
-            
-            MenuItem {
-                text: "📂 Git"
-                height: 35
-                visible: hasSheet("Git")
-                onTriggered: showSections("Git")
-            }
-            
-            MenuItem {
-                text: "🌐 HTML5"
-                height: 35
-                visible: hasSheet("HTML5")
-                onTriggered: showSections("HTML5")
-            }
-            
-            MenuItem {
-                text: "📡 HTTP Status Codes"
-                height: 35
-                visible: hasSheet("HTTP Status Codes")
-                onTriggered: showSections("HTTP Status Codes")
-            }
-            
-            MenuItem {
-                text: "⚡ JavaScript"
-                height: 35
-                visible: hasSheet("JS")
-                onTriggered: showSections("JS")
-            }
-            
-            MenuItem {
-                text: "📝 Markdown"
-                height: 35
-                visible: hasSheet("Markdown")
-                onTriggered: showSections("Markdown")
-            }
-            
-            MenuItem {
-                text: "🔍 Regex"
-                height: 35
-                visible: hasSheet("Regex")
-                onTriggered: showSections("Regex")
-            }
-            
-            MenuItem {
-                text: "🐚 Shell"
-                height: 35
-                visible: hasSheet("Shell")
-                onTriggered: showSections("Shell")
-            }
-            
-            MenuItem {
-                text: "🗄️ SQL"
-                height: 35
-                visible: hasSheet("SQL")
-                onTriggered: showSections("SQL")
-            }
-            
-            MenuItem {
-                text: "📺 Tmux"
-                height: 35
-                visible: hasSheet("Tmux")
-                onTriggered: showSections("Tmux")
-            }
-            
-            MenuItem {
-                text: "✏️ Vim"
-                height: 35
-                visible: hasSheet("Vim")
-                onTriggered: showSections("Vim")
-            }
-            
-            MenuSeparator {}
-            
-            MenuItem {
-                text: "🔄 Recharger"
-                onTriggered: loadCheatsheets()
-            }
-            
-            MenuItem {
-                text: "⚙️ Configuration"
-                onTriggered: root.expanded = true
-            }
-        }
-        
-        // ============== MENU SECTIONS ==============
-        Menu {
-            id: sectionsMenu
-            title: "Sections"
-            width: 280
-            
-            MenuItem {
-                id: sectionsTitle
-                text: "📂 Sections"
-                enabled: false
-                height: 30
-            }
-            
-            MenuSeparator {}
-            
-            // Les sections seront ajoutées dynamiquement
-            
-            MenuSeparator {}
-            
-            MenuItem {
-                text: "⬅️ Retour"
-                onTriggered: mainMenu.popup()
-            }
-        }
-        
-        // ============== MENU ITEMS ==============
-        Menu {
-            id: itemsMenu
-            title: "Items"
-            width: 300
-            
-            MenuItem {
-                id: itemsTitle
-                text: "💡 Items"
-                enabled: false
-                height: 30
-            }
-            
-            MenuSeparator {}
-            
-            // Les items seront ajoutés dynamiquement
-            
-            MenuSeparator {}
-            
-            MenuItem {
-                text: "⬅️ Retour aux sections"
-                onTriggered: sectionsMenu.popup()
+        onClicked: (mouse) => {
+            if (mouse.button === Qt.LeftButton) {
+                root.expanded = !root.expanded;
+            } else if (mouse.button === Qt.MiddleButton) {
+                loadCheatsheets();
             }
         }
     }
     
     // ============== INTERFACE ÉTENDUE ==============
     fullRepresentation: Item {
-        Layout.minimumWidth: 400
-        Layout.minimumHeight: 300
+        Layout.minimumWidth: 700
+        Layout.minimumHeight: 500
+        Layout.preferredWidth: 900
+        Layout.preferredHeight: 600
         
         ColumnLayout {
             anchors.fill: parent
-            anchors.margins: 20
-            spacing: 15
+            anchors.margins: 10
+            spacing: 10
             
-            Kirigami.Heading {
-                text: "🎯 Cheaty KDE"
-                level: 1
-                Layout.alignment: Qt.AlignHCenter
-            }
-            
-            PlasmaComponents.Label {
-                text: "Navigation simple : Cheatsheets → Sections → Items → Code copié !"
-                Layout.alignment: Qt.AlignHCenter
-                wrapMode: Text.WordWrap
-            }
-            
-            Rectangle {
-                Layout.fillWidth: true
-                height: 1
-                color: Kirigami.Theme.textColor
-                opacity: 0.2
-            }
-            
+            // Header
             RowLayout {
-                PlasmaComponents.Label {
-                    text: "📋 Cheatsheets détectés :"
-                    font.bold: true
+                Layout.fillWidth: true
+                
+                Kirigami.Icon {
+                    source: root.customIcon.length > 0 ? root.customIcon : "accessories-text-editor"
+                    Layout.preferredWidth: 32
+                    Layout.preferredHeight: 32
                 }
-                PlasmaComponents.Label {
-                    text: loadedSheets.length
-                    color: Kirigami.Theme.positiveTextColor
-                    font.bold: true
+                
+                Kirigami.Heading {
+                    text: "Cheaty KDE"
+                    level: 1
+                    Layout.fillWidth: true
+                }
+                
+                PlasmaComponents.Button {
+                    icon.name: "view-refresh"
+                    text: "Recharger"
+                    onClicked: root.loadCheatsheets()
                 }
             }
             
-            PlasmaComponents.Button {
-                text: "🔄 Recharger cheatsheets"
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: loadCheatsheets()
+            Kirigami.Separator {
+                Layout.fillWidth: true
             }
             
-            PlasmaComponents.Button {
-                text: "🧪 Tester menu"
-                Layout.alignment: Qt.AlignHCenter
-                onClicked: mainMenu.popup()
-            }
-            
-            // Liste simple des cheatsheets
-            ScrollView {
+            // Navigation par liste et contenu avec SplitView
+            SplitView {
                 Layout.fillWidth: true
                 Layout.fillHeight: true
+                orientation: Qt.Horizontal
                 
-                ListView {
-                    model: loadedSheets
-                    delegate: Rectangle {
-                        width: ListView.view.width
-                        height: 40
-                        color: "transparent"
-                        border.color: Kirigami.Theme.textColor
-                        border.width: 1
-                        opacity: 0.1
-                        radius: 5
+                // Liste des cheatsheets avec largeur fixe
+                Item {
+                    SplitView.minimumWidth: 200
+                    SplitView.preferredWidth: 250
+                    SplitView.maximumWidth: 300
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
                         
-                        RowLayout {
-                            anchors.left: parent.left
-                            anchors.leftMargin: 10
-                            anchors.verticalCenter: parent.verticalCenter
-                            spacing: 10
+                        PlasmaComponents.Label {
+                            text: "Cheatsheets (" + root.loadedSheets.length + ")"
+                            font.bold: true
+                        }
+                        
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
                             
-                            Kirigami.Icon {
-                                Layout.preferredWidth: 24
-                                Layout.preferredHeight: 24
-                                source: modelData.iconPath ? "file://" + modelData.iconPath : "text-x-generic"
-                            }
-                            
-                            PlasmaComponents.Label {
-                                text: modelData.name
-                                font.bold: true
+                            ListView {
+                                id: sheetsList
+                                model: root.loadedSheets
+                                currentIndex: root.currentSheetIndex
+                                
+                                delegate: ItemDelegate {
+                                    width: ListView.view.width
+                                    height: 50
+                                    
+                                    highlighted: ListView.isCurrentItem
+                                    
+                                    RowLayout {
+                                        anchors.fill: parent
+                                        anchors.margins: 5
+                                        spacing: 10
+                                        
+                                        Image {
+                                            Layout.preferredWidth: 32
+                                            Layout.preferredHeight: 32
+                                            source: modelData.iconPath ? "file://" + modelData.iconPath : ""
+                                            sourceSize: Qt.size(32, 32)
+                                            fillMode: Image.PreserveAspectFit
+                                            
+                                            // Fallback icon si pas d'image
+                                            Kirigami.Icon {
+                                                anchors.fill: parent
+                                                source: "text-x-generic"
+                                                visible: parent.status !== Image.Ready
+                                            }
+                                        }
+                                        
+                                        PlasmaComponents.Label {
+                                            text: modelData.name || "Sans nom"
+                                            Layout.fillWidth: true
+                                            elide: Text.ElideRight
+                                        }
+                                    }
+                                    
+                                    onClicked: {
+                                        // Si on clique sur le même, on ferme
+                                        if (sheetsList.currentIndex === index) {
+                                            sheetsList.currentIndex = -1;
+                                            root.currentSheetIndex = -1;
+                                            root.currentSheetName = "Sélectionnez un cheatsheet";
+                                            root.contentModel.clear();
+                                        } else {
+                                            sheetsList.currentIndex = index;
+                                            root.currentSheetIndex = index;
+                                            root.showSheetContent(modelData);
+                                        }
+                                    }
+                                }
                             }
                         }
                     }
+                }
+                
+                // Zone de contenu
+                Item {
+                    SplitView.fillWidth: true
+                    
+                    ColumnLayout {
+                        anchors.fill: parent
+                        
+                        PlasmaComponents.Label {
+                            text: root.currentSheetName
+                            font.bold: true
+                            font.pixelSize: 16
+                        }
+                        
+                        ScrollView {
+                            Layout.fillWidth: true
+                            Layout.fillHeight: true
+                            
+                            ListView {
+                                id: contentListView
+                                model: root.contentModel
+                                spacing: 0
+                                
+                                delegate: Item {
+                                    width: contentListView.width
+                                    height: model.isSection ? 35 : (root.isSectionExpanded(model.sectionName) ? itemContent.height : 0)
+                                    clip: true
+                                    
+                                    // Section header
+                                    Rectangle {
+                                        anchors.fill: parent
+                                        color: model.isSection ? Kirigami.Theme.highlightColor : "transparent"
+                                        opacity: model.isSection ? 0.3 : 0
+                                        visible: model.isSection
+                                        
+                                        MouseArea {
+                                            anchors.fill: parent
+                                            cursorShape: Qt.PointingHandCursor
+                                            enabled: model.isSection
+                                            onClicked: {
+                                                root.toggleSection(model.sectionName);
+                                            }
+                                        }
+                                        
+                                        RowLayout {
+                                            anchors.fill: parent
+                                            anchors.leftMargin: 10
+                                            anchors.rightMargin: 10
+                                            visible: model.isSection
+                                            
+                                            PlasmaComponents.Label {
+                                                text: model.isSection ? (root.isSectionExpanded(model.sectionName) ? "▼ " : "▶ ") + model.sectionName : ""
+                                                font.bold: true
+                                                Layout.fillWidth: true
+                                            }
+                                            
+                                            PlasmaComponents.Label {
+                                                text: model.isSection ? "(" + model.itemCount + " items)" : ""
+                                                opacity: 0.7
+                                                font.pixelSize: 12
+                                            }
+                                        }
+                                    }
+                                    
+                                    // Item content
+                                    Item {
+                                        id: itemContent
+                                        anchors.fill: parent
+                                        height: model.isSection ? 0 : (itemColumn.implicitHeight + 20)
+                                        visible: !model.isSection && root.isSectionExpanded(model.sectionName)
+                                        
+                                        ColumnLayout {
+                                            id: itemColumn
+                                            width: parent.width - 40
+                                            anchors.left: parent.left
+                                            anchors.leftMargin: 30
+                                            anchors.top: parent.top
+                                            anchors.topMargin: 10
+                                            spacing: 5
+                                            
+                                            PlasmaComponents.Label {
+                                                text: model.itemName || ""
+                                                font.bold: true
+                                                Layout.fillWidth: true
+                                                visible: !model.isSection
+                                            }
+                                            
+                                            PlasmaComponents.Label {
+                                                text: model.description || ""
+                                                opacity: 0.7
+                                                wrapMode: Text.WordWrap
+                                                Layout.fillWidth: true
+                                                visible: !model.isSection && text !== ""
+                                            }
+                                            
+                                            Rectangle {
+                                                Layout.fillWidth: true
+                                                Layout.preferredHeight: codeText.implicitHeight + 10
+                                                color: Kirigami.Theme.alternateBackgroundColor
+                                                border.color: Kirigami.Theme.textColor
+                                                border.width: 1
+                                                opacity: 0.8
+                                                radius: 3
+                                                visible: !model.isSection && model.code !== ""
+                                                
+                                                PlasmaComponents.Label {
+                                                    id: codeText
+                                                    anchors.fill: parent
+                                                    anchors.margins: 5
+                                                    text: model.code || ""
+                                                    font.family: "monospace"
+                                                    wrapMode: Text.Wrap
+                                                    textFormat: Text.PlainText
+                                                }
+                                            }
+                                            
+                                            PlasmaComponents.Button {
+                                                text: "📋 Copier"
+                                                Layout.alignment: Qt.AlignRight
+                                                visible: !model.isSection && model.code !== ""
+                                                
+                                                property string codeText: model.code || ""
+                                                
+                                                onClicked: {
+                                                    root.copyToClipboard(codeText);
+                                                    text = "✅ Copié!";
+                                                    copiedTimer.restart();
+                                                }
+                                                
+                                                Timer {
+                                                    id: copiedTimer
+                                                    interval: 2000
+                                                    onTriggered: parent.text = "📋 Copier"
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            // Barre de statut
+            Kirigami.Separator {
+                Layout.fillWidth: true
+            }
+            
+            RowLayout {
+                Layout.fillWidth: true
+                
+                PlasmaComponents.Label {
+                    text: "📋 " + root.loadedSheets.length + " cheatsheets chargés"
+                    opacity: 0.7
+                }
+                
+                Item { Layout.fillWidth: true }
+                
+                PlasmaComponents.Label {
+                    text: "Clic-milieu sur l'icône pour recharger | Cliquez sur les sections pour les replier/déplier"
+                    opacity: 0.5
+                    font.pixelSize: 10
                 }
             }
         }
@@ -313,152 +350,75 @@ PlasmoidItem {
     
     // ============== FONCTIONS ==============
     
-    function hasSheet(sheetName) {
-        for (let i = 0; i < loadedSheets.length; i++) {
-            if (loadedSheets[i].name.includes(sheetName) || 
-                loadedSheets[i].folderPath.includes(sheetName)) {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    function getSheet(sheetName) {
-        for (let i = 0; i < loadedSheets.length; i++) {
-            if (loadedSheets[i].name.includes(sheetName) || 
-                loadedSheets[i].folderPath.includes(sheetName)) {
-                return loadedSheets[i];
-            }
-        }
-        return null;
-    }
-    
-    function showSections(sheetName) {
-        console.log("📂 DEBUT showSections pour:", sheetName);
-        let sheet = getSheet(sheetName);
-        console.log("📄 Sheet trouvé:", sheet ? sheet.name : "NULL");
+    function showSheetContent(sheet) {
+        console.log("📄 Affichage de:", sheet.name);
         
-        if (!sheet) {
-            console.log("❌ Pas de sheet trouvé pour", sheetName);
-            return;
-        }
+        // Mettre à jour le nom affiché
+        root.currentSheetName = sheet.name;
+        
+        // Vider le modèle et réinitialiser les sections
+        root.contentModel.clear();
+        root.expandedSections = {};
         
         if (!sheet.sections) {
             console.log("❌ Pas de sections dans", sheet.name);
-            console.log("📋 Contenu sheet:", Object.keys(sheet));
             return;
         }
         
-        console.log("📂 Sections disponibles:", Object.keys(sheet.sections));
+        // Parcourir toutes les sections et items
+        let allSections = Object.keys(sheet.sections);
+        console.log("📊 Sections trouvées:", allSections);
         
-        currentSheet = sheet;
-        
-        // FIX: Accès correct à sectionsTitle
-        if (sectionsMenu.itemAt(0)) {
-            sectionsMenu.itemAt(0).text = "📂 " + sheet.name;
-        }
-        
-        // Supprimer TOUS les items sauf les 3 premiers (titre, séparateur, séparateur final) et le dernier (retour)
-        let itemsToRemove = [];
-        for (let i = 2; i < sectionsMenu.count - 2; i++) {
-            let item = sectionsMenu.itemAt(i);
-            if (item) {
-                itemsToRemove.push(item);
-            }
-        }
-        
-        console.log("🗑️ Suppression de", itemsToRemove.length, "anciens items");
-        itemsToRemove.forEach(item => {
-            try {
-                sectionsMenu.removeItem(item);
-            } catch (e) {
-                console.log("❌ Erreur suppression item:", e.toString());
-            }
-        });
-        
-        // Ajouter les nouvelles sections à l'index 2 (après titre et séparateur)
-        let insertIndex = 2;
-        let sectionsAdded = 0;
-        
-        for (let sectionName in sheet.sections) {
-            console.log("➕ Ajout section:", sectionName);
-            try {
-                let sectionItem = Qt.createQmlObject(`
-                    import QtQuick.Controls
-                    MenuItem {
-                        text: "📝 ${sectionName}"
-                        height: 35
-                        onTriggered: {
-                            console.log("🎯 Section cliquée:", "${sectionName}");
-                            root.showItems("${sectionName}");
-                        }
-                    }
-                `, root, "section-" + sectionName.replace(/\s+/g, '_'));
+        for (let i = 0; i < allSections.length; i++) {
+            let sectionName = allSections[i];
+            let section = sheet.sections[sectionName];
+            let items = Object.keys(section);
+            
+            console.log("  📂 Section:", sectionName, "avec", items.length, "items");
+            
+            // Initialiser la section comme fermée par défaut
+            root.expandedSections[sectionName] = false;
+            
+            // Ajouter l'en-tête de section
+            root.contentModel.append({
+                isSection: true,
+                sectionName: sectionName,
+                itemCount: items.length,
+                itemName: "",
+                description: "",
+                code: ""
+            });
+            
+            // Ajouter tous les items de la section
+            for (let j = 0; j < items.length; j++) {
+                let itemName = items[j];
+                let item = section[itemName];
                 
-                sectionsMenu.insertItem(insertIndex++, sectionItem);
-                sectionsAdded++;
-                console.log("✅ Section ajoutée:", sectionName);
-            } catch (e) {
-                console.log("❌ Erreur création section:", sectionName, e.toString());
+                root.contentModel.append({
+                    isSection: false,
+                    sectionName: sectionName,
+                    itemCount: 0,
+                    itemName: itemName,
+                    description: item.description || "",
+                    code: item.code || ""
+                });
             }
         }
         
-        console.log("📊 Total sections ajoutées:", sectionsAdded);
-        console.log("📋 Menu sections count:", sectionsMenu.count);
-        
-        sectionsMenu.popup();
-        console.log("📂 FIN showSections");
+        console.log("✅ Total entrées ajoutées:", root.contentModel.count);
     }
     
-    function showItems(sectionName) {
-        console.log("💡 Affichage items pour:", sectionName);
-        if (!currentSheet || !currentSheet.sections[sectionName]) {
-            console.log("❌ Section introuvable:", sectionName);
-            return;
-        }
-        
-        currentSection = sectionName;
-        
-        // FIX: Accès correct au titre
-        if (itemsMenu.itemAt(0)) {
-            itemsMenu.itemAt(0).text = "💡 " + sectionName;
-        }
-        
-        let sectionData = currentSheet.sections[sectionName];
-        
-        // Supprimer les anciens items de façon plus sûre
-        let itemsToRemove = [];
-        for (let i = 2; i < itemsMenu.count - 2; i++) {
-            let item = itemsMenu.itemAt(i);
-            if (item) {
-                itemsToRemove.push(item);
-            }
-        }
-        
-        console.log("🗑️ Suppression de", itemsToRemove.length, "anciens items");
-        itemsToRemove.forEach(item => {
-            try {
-                itemsMenu.removeItem(item);
-            } catch (e) {
-                console.log("❌ Erreur suppression item:", e.toString());
-            }
-        });
-        
-        // Ajouter les nouveaux items
-        let insertIndex = 2;
-        for (let itemName in sectionData) {
-            let itemData = sectionData[itemName];
-            let code = itemData.code || "";
-            let safeName = itemName.replace(/"/g, '\\"');
-            
-            try {
-                let menuItem = Qt.createQmlObject(`
-                    import QtQuick.Controls
-                    MenuItem {
-                        property string itemCode: \`${code.replace(/`/g, '\\`').replace(/\$/g, '\\
+    function toggleSection(sectionName) {
+        root.expandedSections[sectionName] = !root.expandedSections[sectionName];
+        root.expandedSectionsChanged();
+    }
+    
+    function isSectionExpanded(sectionName) {
+        return root.expandedSections[sectionName] === true;
+    }
     
     function loadCheatsheets() {
-        console.log("🔄 Rechargement...");
+        console.log("🔄 Rechargement des cheatsheets...");
         loadedSheets = [];
         
         let folders = [
@@ -492,98 +452,63 @@ PlasmoidItem {
                 let sheetData = JSON.parse(xhr.responseText);
                 sheetData.iconPath = iconPath;
                 sheetData.folderPath = folderPath;
+                console.log("📁 Chargé:", sheetData.name, "avec icône:", iconPath);
                 return sheetData;
             }
         } catch (e) {
-            console.log("❌ Erreur:", folderPath, e.toString());
+            console.log("❌ Erreur chargement:", folderPath, e.toString());
         }
         return null;
     }
     
     function copyToClipboard(text) {
-        console.log("📋 Copie vers presse-papiers:", text.substring(0, 50) + "...");
+        console.log("📋 Copie vers presse-papiers");
         
-        if (typeof Qt.application !== 'undefined' && Qt.application.clipboard) {
-            Qt.application.clipboard.text = text;
-            console.log("✅ Copie réussie via Qt.application.clipboard");
-            return true;
-        }
-        
-        console.log("❌ Qt.application.clipboard non disponible");
-        return false;
-    }
-})}\`
-                        text: "🎯 ${safeName}"
-                        height: 35
-                        onTriggered: {
-                            console.log("✅ Code copié:", "${safeName}");
-                            root.copyToClipboard(itemCode);
-                        }
-                    }
-                `, root, "item-" + itemName.replace(/\s+/g, '_'));
-                
-                itemsMenu.insertItem(insertIndex++, menuItem);
-            } catch (e) {
-                console.log("❌ Erreur création item:", itemName, e.toString());
-            }
-        }
-        
-        itemsMenu.popup();
-    }
-    
-    function loadCheatsheets() {
-        console.log("🔄 Rechargement...");
-        loadedSheets = [];
-        
-        let folders = [
-            "Bootstrap", "CSS", "Docker", "Git", "HTML5", 
-            "HTTP Status Codes", "JS", "Markdown", "Regex", 
-            "Shell", "SQL", "Tmux", "Vim"
-        ];
-        
-        folders.forEach(function(folderName) {
-            let folderPath = cheatsheetFolder + "/" + folderName;
-            let sheetData = loadSheetFromFolder(folderPath);
-            if (sheetData) {
-                loadedSheets.push(sheetData);
-            }
-        });
-        
-        console.log("✅ Chargé:", loadedSheets.length, "cheatsheets");
-        loadedSheetsChanged();
-    }
-    
-    function loadSheetFromFolder(folderPath) {
+        // Méthode principale pour Plasma 6
         try {
-            let sheetJsonPath = folderPath + "/sheet.json";
-            let iconPath = folderPath + "/icon.svg";
-            
-            let xhr = new XMLHttpRequest();
-            xhr.open("GET", "file://" + sheetJsonPath, false);
-            xhr.send();
-            
-            if (xhr.status === 200 || xhr.status === 0) {
-                let sheetData = JSON.parse(xhr.responseText);
-                sheetData.iconPath = iconPath;
-                sheetData.folderPath = folderPath;
-                return sheetData;
+            if (typeof Clipboard !== 'undefined') {
+                Clipboard.copyText(text);
+                console.log("✅ Copie réussie via Clipboard global");
+                return true;
             }
         } catch (e) {
-            console.log("❌ Erreur:", folderPath, e.toString());
+            console.log("⚠️ Clipboard global non disponible");
         }
-        return null;
-    }
-    
-    function copyToClipboard(text) {
-        console.log("📋 Copie vers presse-papiers:", text.substring(0, 50) + "...");
         
-        if (typeof Qt.application !== 'undefined' && Qt.application.clipboard) {
-            Qt.application.clipboard.text = text;
-            console.log("✅ Copie réussie via Qt.application.clipboard");
+        // Méthode alternative via Qt.application
+        try {
+            if (typeof Qt.application !== 'undefined' && Qt.application.clipboard) {
+                Qt.application.clipboard.clear();
+                Qt.application.clipboard.text = text;
+                console.log("✅ Copie réussie via Qt.application.clipboard");
+                return true;
+            }
+        } catch (e) {
+            console.log("⚠️ Qt.application.clipboard non disponible");
+        }
+        
+        // Méthode via un composant temporaire
+        try {
+            let clipboard = Qt.createQmlObject(`
+                import QtQuick
+                TextEdit {
+                    id: clipboardHelper
+                    visible: false
+                    function copyText(txt) {
+                        text = txt;
+                        selectAll();
+                        copy();
+                    }
+                }
+            `, root, "clipboard");
+            clipboard.copyText(text);
+            clipboard.destroy();
+            console.log("✅ Copie réussie via TextEdit");
             return true;
+        } catch (e) {
+            console.log("❌ Impossible de copier:", e.toString());
         }
         
-        console.log("❌ Qt.application.clipboard non disponible");
         return false;
     }
 }
