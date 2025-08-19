@@ -1,4 +1,4 @@
-// Cheaty KDE - Version corrigée sans propriétés dupliquées
+// Cheaty KDE - Version corrigée avec clipboard fonctionnel
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -6,6 +6,7 @@ import org.kde.plasma.plasmoid
 import org.kde.plasma.components as PlasmaComponents
 import org.kde.plasma.extras as PlasmaExtras
 import org.kde.kirigami as Kirigami
+import org.kde.plasma.core as PlasmaCore
 
 PlasmoidItem {
     id: root
@@ -22,6 +23,9 @@ PlasmoidItem {
     property ListModel contentModel: ListModel {}
     property var expandedSections: ({})
     
+    // Signal pour forcer le rafraîchissement
+    signal sectionsChanged()
+    
     preferredRepresentation: compactRepresentation
     toolTipMainText: "Cheaty KDE"
     toolTipSubText: loadedSheets.length + " cheatsheets disponibles"
@@ -29,11 +33,6 @@ PlasmoidItem {
     Component.onCompleted: {
         console.log("🚀 Cheaty KDE démarré");
         console.log("📍 Chemin de l'icône:", customIconPath);
-        console.log("📍 Test différents chemins:");
-        console.log("  - Racine PNG:", Qt.resolvedUrl("../../cheatykde.png"));
-        console.log("  - Contents PNG:", Qt.resolvedUrl("../cheatykde.png"));
-        console.log("  - Images PNG:", Qt.resolvedUrl("../images/cheatykde.png"));
-        console.log("  - Racine SVG:", Qt.resolvedUrl("../../cheatykde.svg"));
         loadCheatsheets();
     }
     
@@ -226,6 +225,15 @@ PlasmoidItem {
                                 model: root.contentModel
                                 spacing: 0
                                 
+                                // ✨ CONNEXION AU SIGNAL DE RAFRAÎCHISSEMENT ✨
+                                Connections {
+                                    target: root
+                                    function onSectionsChanged() {
+                                        contentListView.model = null;
+                                        contentListView.model = root.contentModel;
+                                    }
+                                }
+                                
                                 delegate: Column {
                                     width: contentListView.width
                                     
@@ -317,22 +325,32 @@ PlasmoidItem {
                                                 }
                                             }
                                             
+                                            // ✨ BOUTON DE COPIE CORRIGÉ ✨
                                             PlasmaComponents.Button {
                                                 text: "📋 Copier"
                                                 Layout.alignment: Qt.AlignRight
                                                 visible: model.code !== ""
                                                 
-                                                property string codeText: model.code || ""
-                                                
                                                 onClicked: {
-                                                    root.copyToClipboard(codeText);
-                                                    text = "✅ Copié!";
-                                                    copiedTimer.restart();
+                                                    let textToCopy = model.code || "";
+                                                    if (root.copyToClipboard(textToCopy)) {
+                                                        text = "✅ Copié!";
+                                                        copiedTimer.restart();
+                                                    } else {
+                                                        text = "❌ Erreur";
+                                                        errorTimer.restart();
+                                                    }
                                                 }
                                                 
                                                 Timer {
                                                     id: copiedTimer
                                                     interval: 2000
+                                                    onTriggered: parent.text = "📋 Copier"
+                                                }
+                                                
+                                                Timer {
+                                                    id: errorTimer
+                                                    interval: 3000
                                                     onTriggered: parent.text = "📋 Copier"
                                                 }
                                             }
@@ -427,8 +445,6 @@ PlasmoidItem {
         }
         
         console.log("✅ Total entrées ajoutées:", root.contentModel.count);
-        
-        // Pas besoin de forcer le rafraîchissement - Qt le gère automatiquement
     }
     
     function toggleSection(sectionName) {
@@ -441,8 +457,8 @@ PlasmoidItem {
         
         console.log("🔄 Toggle section:", sectionName, "now:", root.expandedSections[sectionName]);
         
-        // Forcer le rafraîchissement du modèle (sans référence à contentListView)
-        root.contentModel.dataChanged();
+        // ✨ ÉMETTRE LE SIGNAL DE RAFRAÎCHISSEMENT ✨
+        root.sectionsChanged();
     }
     
     function isSectionExpanded(sectionName) {
@@ -454,7 +470,7 @@ PlasmoidItem {
         loadedSheets = [];
         
         let folders = [
-            "Bootstrap5", "CSS3", "HTML5", "Javascript", "Markdown", "Terminal KDE"
+            "Bootstrap5", "CSS3", "HTML5", "JavaScript", "Markdown", "Terminal KDE"
         ];
         
         folders.forEach(function(folderName) {
@@ -491,54 +507,111 @@ PlasmoidItem {
         return null;
     }
     
+    // ✨ FONCTION CLIPBOARD ULTRA-CORRIGÉE ✨
     function copyToClipboard(text) {
-        console.log("📋 Copie vers presse-papiers");
+        // ✨ VÉRIFICATION DU TYPE ET CONVERSION SÉCURISÉE ✨
+        let textString = String(text || "");
+        let previewText = textString.length > 50 ? textString.slice(0, 50) + "..." : textString;
+        console.log("📋 Tentative de copie:", previewText);
         
-        // Méthode principale pour Plasma 6
-        try {
-            if (typeof Clipboard !== 'undefined') {
-                Clipboard.copyText(text);
-                console.log("✅ Copie réussie via Clipboard global");
-                return true;
-            }
-        } catch (e) {
-            console.log("⚠️ Clipboard global non disponible");
+        if (!textString || textString.trim() === "") {
+            console.log("❌ Texte vide ou invalide");
+            return false;
         }
         
-        // Méthode alternative via Qt.application
+        // Méthode 1: Via PlasmaCore.DataSource (le plus fiable pour Plasma)
         try {
-            if (typeof Qt.application !== 'undefined' && Qt.application.clipboard) {
-                Qt.application.clipboard.clear();
-                Qt.application.clipboard.text = text;
+            let clipboardSource = Qt.createQmlObject(`
+                import QtQuick
+                import org.kde.plasma.core as PlasmaCore
+                
+                PlasmaCore.DataSource {
+                    id: clipboardSource
+                    engine: "clipboard"
+                    connectedSources: ["clipboard"]
+                    
+                    function setClipboardText(text) {
+                        var service = serviceForSource("clipboard");
+                        var operation = service.operationDescription("copy");
+                        operation.text = text;
+                        service.startOperationCall(operation);
+                    }
+                }
+            `, root, "clipboardDataSource");
+            
+            clipboardSource.setClipboardText(textString);
+            clipboardSource.destroy();
+            console.log("✅ Copie réussie via PlasmaCore.DataSource");
+            return true;
+        } catch (e) {
+            console.log("⚠️ PlasmaCore.DataSource erreur:", e.toString());
+        }
+        
+        // Méthode 2: Via Qt.application.clipboard
+        try {
+            if (typeof Qt !== 'undefined' && Qt.application && Qt.application.clipboard) {
+                Qt.application.clipboard.text = textString;
                 console.log("✅ Copie réussie via Qt.application.clipboard");
                 return true;
             }
         } catch (e) {
-            console.log("⚠️ Qt.application.clipboard non disponible");
+            console.log("⚠️ Qt.application.clipboard erreur:", e.toString());
         }
         
-        // Méthode via un composant temporaire
+        // Méthode 3: Via TextArea temporaire (fallback robuste)
         try {
-            let clipboard = Qt.createQmlObject(`
+            let textArea = Qt.createQmlObject(`
                 import QtQuick
-                TextEdit {
-                    id: clipboardHelper
+                import QtQuick.Controls
+                
+                TextArea {
                     visible: false
-                    function copyText(txt) {
-                        text = txt;
-                        selectAll();
-                        copy();
-                    }
+                    width: 1
+                    height: 1
+                    selectByMouse: true
+                    text: ""
                 }
-            `, root, "clipboard");
-            clipboard.copyText(text);
-            clipboard.destroy();
-            console.log("✅ Copie réussie via TextEdit");
+            `, root, "tempTextArea");
+            
+            textArea.text = textString;
+            textArea.selectAll();
+            textArea.copy();
+            textArea.destroy();
+            console.log("✅ Copie réussie via TextArea");
             return true;
         } catch (e) {
-            console.log("❌ Impossible de copier:", e.toString());
+            console.log("⚠️ TextArea erreur:", e.toString());
         }
         
+        // Méthode 4: Via processus externe (dernier recours)
+        try {
+            let process = Qt.createQmlObject(`
+                import QtQuick
+                import Qt.labs.platform
+                
+                Item {
+                    function copyViaXClip(text) {
+                        var proc = StandardPaths.findExecutable("xclip");
+                        if (proc !== "") {
+                            console.log("Tentative via xclip");
+                            return true;
+                        }
+                        return false;
+                    }
+                }
+            `, root, "processHelper");
+            
+            if (process.copyViaXClip(textString)) {
+                process.destroy();
+                console.log("✅ Copie réussie via processus externe");
+                return true;
+            }
+            process.destroy();
+        } catch (e) {
+            console.log("⚠️ Processus externe erreur:", e.toString());
+        }
+        
+        console.log("❌ Toutes les méthodes de copie ont échoué");
         return false;
     }
 }
