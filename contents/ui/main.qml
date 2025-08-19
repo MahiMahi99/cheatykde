@@ -1,4 +1,4 @@
-// Cheaty KDE - Version corrigée avec icône et contenu fonctionnels
+// Cheaty KDE - Version corrigée sans propriétés dupliquées
 import QtQuick
 import QtQuick.Layouts
 import QtQuick.Controls
@@ -16,6 +16,7 @@ PlasmoidItem {
     property string currentSection: ""
     property string currentSheetName: "Sélectionnez un cheatsheet"
     property int currentSheetIndex: -1
+    property string customIconPath: Qt.resolvedUrl("../../cheatykde.png")
     
     // Modèle pour le contenu avec sections repliables
     property ListModel contentModel: ListModel {}
@@ -25,12 +26,14 @@ PlasmoidItem {
     toolTipMainText: "Cheaty KDE"
     toolTipSubText: loadedSheets.length + " cheatsheets disponibles"
     
-    // Chemin de l'icône corrigé
-    property string customIconPath: plasmoid.file("", "cheatykde.svg")
-    
     Component.onCompleted: {
         console.log("🚀 Cheaty KDE démarré");
         console.log("📍 Chemin de l'icône:", customIconPath);
+        console.log("📍 Test différents chemins:");
+        console.log("  - Racine PNG:", Qt.resolvedUrl("../../cheatykde.png"));
+        console.log("  - Contents PNG:", Qt.resolvedUrl("../cheatykde.png"));
+        console.log("  - Images PNG:", Qt.resolvedUrl("../images/cheatykde.png"));
+        console.log("  - Racine SVG:", Qt.resolvedUrl("../../cheatykde.svg"));
         loadCheatsheets();
     }
     
@@ -44,9 +47,38 @@ PlasmoidItem {
         hoverEnabled: true
         acceptedButtons: Qt.LeftButton | Qt.MiddleButton
         
-        Kirigami.Icon {
+        // Utiliser QtQuick.Image au lieu de Kirigami.Icon
+        Image {
             anchors.fill: parent
-            source: root.customIconPath || "accessories-text-editor"
+            source: root.customIconPath
+            sourceSize: Qt.size(parent.width, parent.height)
+            fillMode: Image.PreserveAspectFit
+            smooth: true
+            
+            // Fallback si l'image ne se charge pas
+            onStatusChanged: {
+                if (status === Image.Error) {
+                    console.log("❌ Erreur chargement Image:", source);
+                    visible = false;
+                    fallbackIcon.visible = true;
+                } else if (status === Image.Ready) {
+                    console.log("✅ Image chargée avec succès:", source);
+                    visible = true;
+                    fallbackIcon.visible = false;
+                }
+            }
+            
+            // Effet hover
+            scale: parent.containsMouse ? 1.1 : 1.0
+            Behavior on scale { NumberAnimation { duration: 150 } }
+        }
+        
+        // Icône de fallback
+        Kirigami.Icon {
+            id: fallbackIcon
+            anchors.fill: parent
+            source: "accessories-text-editor"
+            visible: false
             active: parent.containsMouse
             scale: parent.containsMouse ? 1.1 : 1.0
             Behavior on scale { NumberAnimation { duration: 150 } }
@@ -396,8 +428,7 @@ PlasmoidItem {
         
         console.log("✅ Total entrées ajoutées:", root.contentModel.count);
         
-        // Forcer le rafraîchissement de la vue
-        contentListView.forceLayout();
+        // Pas besoin de forcer le rafraîchissement - Qt le gère automatiquement
     }
     
     function toggleSection(sectionName) {
@@ -410,8 +441,8 @@ PlasmoidItem {
         
         console.log("🔄 Toggle section:", sectionName, "now:", root.expandedSections[sectionName]);
         
-        // Forcer le rafraîchissement du modèle
-        contentListView.forceLayout();
+        // Forcer le rafraîchissement du modèle (sans référence à contentListView)
+        root.contentModel.dataChanged();
     }
     
     function isSectionExpanded(sectionName) {
@@ -423,9 +454,7 @@ PlasmoidItem {
         loadedSheets = [];
         
         let folders = [
-            "Bootstrap", "CSS", "Docker", "Git", "HTML5", 
-            "HTTP Status Codes", "JS", "Markdown", "Regex", 
-            "Shell", "SQL", "Tmux", "Vim"
+            "Bootstrap5", "CSS3", "HTML5", "Javascript", "Markdown", "Terminal KDE"
         ];
         
         folders.forEach(function(folderName) {
