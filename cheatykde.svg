@@ -2,54 +2,34 @@
 <!-- Created with Inkscape (http://www.inkscape.org/) -->
 
 <svg
-   width="98.054832"
-   height="95.883255"
-   viewBox="0 0 98.054832 95.883255"
+   width="31.122211"
+   height="30.432961"
+   viewBox="0 0 31.122211 30.432961"
    version="1.1"
    id="svg5"
-   xmlns:inkscape="http://www.inkscape.org/namespaces/inkscape"
-   xmlns:sodipodi="http://sodipodi.sourceforge.net/DTD/sodipodi-0.dtd"
+   xml:space="preserve"
    xmlns="http://www.w3.org/2000/svg"
-   xmlns:svg="http://www.w3.org/2000/svg">
-  <sodipodi:namedview
-     id="namedview7"
-     pagecolor="#ffffff"
-     bordercolor="#000000"
-     borderopacity="0.25"
-     inkscape:showpageshadow="2"
-     inkscape:pageopacity="0.0"
-     inkscape:pagecheckerboard="0"
-     inkscape:deskcolor="#d1d1d1"
-     inkscape:document-units="px"
-     showgrid="false" />
-  <defs
-     id="defs2" />
-  <g
-     inkscape:label="Calque 1"
-     inkscape:groupmode="layer"
+   xmlns:svg="http://www.w3.org/2000/svg"><defs
+     id="defs2" /><g
      id="layer1"
-     transform="translate(-26.80027,2.7887752)">
-    <text
-       xml:space="preserve"
-       style="font-size:167.044px;font-family:Lato;-inkscape-font-specification:Lato;fill:#bbdce5;fill-opacity:1;stroke-width:538.752;stroke-linecap:square;stroke-miterlimit:0;paint-order:markers fill stroke"
-       x="22.290081"
-       y="90.087692"
-       id="text1315"><tspan
-         sodipodi:role="line"
-         id="tspan1313"
+     transform="translate(-0.43889478,-0.78351891)"><g
+       id="layer1-5"
+       transform="matrix(0.31739599,0,0,0.31739599,-8.0674032,1.668665)"><text
+         xml:space="preserve"
+         style="font-size:167.044px;font-family:Lato;-inkscape-font-specification:Lato;fill:#bbdce5;fill-opacity:1;stroke-width:538.752;stroke-linecap:square;stroke-miterlimit:0;paint-order:markers fill stroke"
          x="22.290081"
          y="90.087692"
-         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:Mont;-inkscape-font-specification:'Mont Heavy';fill:#bbdce5;fill-opacity:1;stroke-width:538.752">c</tspan></text>
-    <text
-       xml:space="preserve"
-       style="font-size:137.033px;font-family:Lato;-inkscape-font-specification:Lato;fill:#cfab8d;fill-opacity:1;stroke-width:441.96;stroke-linecap:square;stroke-miterlimit:0;paint-order:markers fill stroke"
-       x="31.908607"
-       y="82.014732"
-       id="text1315-7"><tspan
-         sodipodi:role="line"
-         id="tspan1313-5"
+         id="text1315"><tspan
+           id="tspan1313"
+           x="22.290081"
+           y="90.087692"
+           style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:Mont;-inkscape-font-specification:'Mont Heavy';fill:#bbdce5;fill-opacity:1;stroke-width:538.752">c</tspan></text><text
+         xml:space="preserve"
+         style="font-size:137.033px;font-family:Lato;-inkscape-font-specification:Lato;fill:#cfab8d;fill-opacity:1;stroke-width:441.96;stroke-linecap:square;stroke-miterlimit:0;paint-order:markers fill stroke"
          x="31.908607"
          y="82.014732"
-         style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:Mont;-inkscape-font-specification:'Mont Heavy';fill:#cfab8d;fill-opacity:1;stroke-width:441.96">c</tspan></text>
-  </g>
-</svg>
+         id="text1315-7"><tspan
+           id="tspan1313-5"
+           x="31.908607"
+           y="82.014732"
+           style="font-style:normal;font-variant:normal;font-weight:900;font-stretch:normal;font-family:Mont;-inkscape-font-specification:'Mont Heavy';fill:#cfab8d;fill-opacity:1;stroke-width:441.96">c</tspan></text></g></g></svg>
